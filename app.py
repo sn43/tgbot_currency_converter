@@ -30,15 +30,21 @@ def values_handler(message: telebot.types.Message):
 @bot.message_handler(content_types=['text'])
 def output(message: telebot.types.Message):
     # quote - валюта, base - в какую валюту переводим quote, amount - количество валюты quote. Разбиваем пустой строкой:
-    values = message.text.split(' ')
-    quote, base, amount = values
+    try:
+        values = message.text.split(' ')
+        if len(values) != 3:
+            raise APIException('Неверный формат команды.')
 
-    # Вытаскиваем результат и выводим его пользователю:
-    result = Converter.get_price(quote, base, amount)
-    text = f'Цена {amount} {keys[quote]} составляет:\n{result} {keys[base]}'
-    bot.send_message(message.chat.id, text)
+        quote, base, amount = values
+        # Вытаскиваем результат из get_price и выводим его пользователю, если нет исключений:
+        result = Converter.get_price(quote, base, amount)
+    except APIException as exc:
+        bot.reply_to(message, f'Ошибка ввода:\n{exc}')
+    except Exception as exc:
+        bot.reply_to(message, f'Ошибка сервера:\n{exc}')
+    else:
+        bot.send_message(message.chat.id, result)
 
 
 if __name__ == '__main__':
-
     bot.polling(none_stop=True)
