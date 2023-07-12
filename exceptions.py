@@ -1,2 +1,2 @@
-class UserError(Exception):
+class APIException(Exception):
     pass
