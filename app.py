@@ -1,3 +1,5 @@
+import json
+import requests
 import telebot
 
 from config import TOKEN, keys
@@ -20,16 +22,29 @@ def start_handler(message: telebot.types.Message):
 
 @bot.message_handler(commands=['values'])
 def values_handler(message: telebot.types.Message):
-
     text = 'Список доступных валют:\n'
     for key in keys.keys():
         text = '\n'.join((text, key))
     bot.reply_to(message, text)
 
 
-@bot.message_handler(chat_types=['text'])
+@bot.message_handler(content_types=['text'])
 def converter(message: telebot.types.Message):
-    pass
+    # quote - валюта, base - в какую валюту переводим quote, amount - количество валюты quote. Разбиваем пустой строкой:
+    values = message.text.split(' ')
+    quote, base, amount = values
+
+    # Передаем введенные пользователем данные в запрос с помощью тикеров с ключами:
+    quote_ticker = keys[quote]
+    base_ticker = keys[base]
+    r = requests.get(f'https://min-api.cryptocompare.com/data/price?fsym={quote_ticker}&tsyms={base_ticker}')
+    # Загружаем контент в json и умножаем полученный курс валюты на введенное пользователем количество:
+    total_base = json.loads(r.content)[keys[base]]
+    result = float(total_base) * float(amount)
+
+    # Выводим пользователю сообщение с результатом:
+    text = f'Цена {amount} {keys[quote]} составляет:\n{result} {keys[base]}'
+    bot.send_message(message.chat.id, text)
 
 
 if __name__ == '__main__':
